@@ -1,0 +1,8 @@
+# Install on the utility VM with: crontab /opt/anylist-export/cron.example
+# The absolute paths are intentional: cron has a minimal PATH and no working directory.
+SHELL=/bin/sh
+PATH=/usr/bin:/bin
+ANYLIST_RUN_CONVERSIONS=1
+
+# Run nightly at 02:30 local time. flock returns 75 when a prior run is active.
+30 2 * * * /opt/anylist-export/scripts/cron-backup.sh >>/opt/anylist-export/logs/backup.log 2>&1

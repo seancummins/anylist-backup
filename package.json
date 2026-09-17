@@ -1,0 +1,19 @@
+{
+  "name": "anylist-readonly-export-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal read-only AnyList recipe export proof of concept",
+  "type": "commonjs",
+  "scripts": {
+    "export:recipe": "node export-one-recipe.js",
+    "backup:recipes": "node backup-all-recipes.js",
+    "convert:snapshot": "node convert-snapshot.js",
+    "convert:snapshot:cooklang": "node convert-snapshot.js",
+    "test:conversion": "node test/conversion.test.js"
+  },
+  "dependencies": {
+    "@cooklang/cooklang": "0.18.7",
+    "anylist": "0.8.6",
+    "yaml": "2.9.1"
+  }
+}

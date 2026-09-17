@@ -1,0 +1,47 @@
+[
+  {
+    "identifier": "fixture-fraction-section",
+    "timestamp": 1700000000,
+    "name": "Fractional Batter",
+    "note": "Make ahead.\nKeep chilled.",
+    "sourceName": "Fixture Book",
+    "sourceUrl": "https://example.invalid/batter",
+    "ingredients": [
+      {"identifier": "heading-1", "rawIngredient": "Batter", "name": "Batter", "quantity": null, "note": null, "isHeading": true},
+      {"identifier": "ingredient-1", "rawIngredient": "1/2 cup all-purpose flour", "name": "all-purpose flour", "quantity": "1/2 cup", "note": null, "isHeading": false},
+      {"identifier": "ingredient-2", "rawIngredient": "1 1/2 tbsp milk", "name": "milk", "quantity": "1 1/2 tbsp", "note": "cold", "isHeading": false}
+    ],
+    "preparationSteps": ["Whisk the dry ingredients.\nFold in the milk.", "Rest for 10 minutes."],
+    "photoIds": [],
+    "photoUrls": [],
+    "scaleFactor": 1,
+    "rating": 5,
+    "creationTimestamp": 1700000000,
+    "nutritionalInfo": "Optional nutrition\n42 kcal",
+    "cookTime": 600,
+    "prepTime": 300,
+    "servings": "4 servings",
+    "paprikaIdentifier": null,
+    "recipeDataId": "fixture-data"
+  },
+  {
+    "identifier": "fixture-missing-optional",
+    "timestamp": 1700000001,
+    "name": "Plain Water",
+    "ingredients": [{"identifier": "ingredient-3", "rawIngredient": "water", "name": "water", "quantity": null, "note": null, "isHeading": false}],
+    "preparationSteps": [],
+    "photoIds": [],
+    "photoUrls": []
+  },
+  {
+    "identifier": "fixture-multiline-note",
+    "timestamp": 1700000002,
+    "name": "Layered Notes",
+    "note": "First line.\nSecond line.\nThird line.",
+    "ingredients": [{"identifier": "ingredient-4", "rawIngredient": "2 eggs", "name": "eggs", "quantity": "2", "note": "beaten", "isHeading": false}],
+    "preparationSteps": ["Cook gently."],
+    "photoIds": [],
+    "photoUrls": [],
+    "servings": "2"
+  }
+]

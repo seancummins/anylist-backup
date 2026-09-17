@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Local AnyList credentials, encrypted client state, and tokens
+.env
+.env.*
+!.env.example
+.anylist_credentials
+.anylist_credentials.*
+credentials/
+credentials.*
+*.token
+*.tokens
+token.json
+tokens.json
+auth.json
+
+# Downloaded account data and derived artifacts
+exports/
+
+# Local cron logs and generic runtime logs
+logs/
+*.log
+
+# Local agent/editor state
+.agents/
+.codex/
