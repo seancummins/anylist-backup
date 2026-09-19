@@ -3,32 +3,12 @@
 // Read-only AnyList recipe backup. It intentionally invokes no create/save/update/delete API.
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
-const fsSync = require('node:fs');
 const path = require('node:path');
-const AnyList = require('anylist');
 
 const ROOT = __dirname;
 const SNAPSHOTS = path.join(ROOT, 'exports', 'snapshots');
 
-function loadDotEnv(file) {
-	try {
-		return fsSync.readFileSync(file, 'utf8').split(/\r?\n/).reduce((values, line) => {
-			const match = line.match(/^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
-			if (!match || match[2].startsWith('#')) return values;
-			let value = match[2];
-			if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-			values[match[1]] = value;
-			return values;
-		}, {});
-	} catch (error) {
-		if (error.code === 'ENOENT') return {};
-		throw error;
-	}
-}
-
-function setting(dotEnv, name) {
-	return process.env[name] || dotEnv[name];
-}
+const {loadDotEnv, setting} = require('./scripts/config');
 
 function plain(value) {
 	if (value === null || typeof value !== 'object') return value;
@@ -125,23 +105,31 @@ async function updateLatestSuccessful(snapshotName) {
 	await fs.rename(temporaryLink, latestLink);
 }
 
-async function main() {
+async function main(report = {}) {
+	report.phase = 'configuration';
 	const dotEnv = loadDotEnv(path.join(ROOT, '.env'));
 	const email = setting(dotEnv, 'ANYLIST_EMAIL');
 	const password = setting(dotEnv, 'ANYLIST_PASSWORD');
 	if (!email || !password) throw new Error('Missing ANYLIST_EMAIL or ANYLIST_PASSWORD.');
 
+	report.phase = 'snapshot setup';
 	await fs.mkdir(SNAPSHOTS, {recursive: true});
 	const name = snapshotName();
 	const staging = path.join(SNAPSHOTS, `.${name}.in-progress-${process.pid}`);
 	const completed = path.join(SNAPSHOTS, name);
+	report.snapshot = staging;
 	await fs.mkdir(path.join(staging, 'recipes'), {recursive: true});
 	await fs.mkdir(path.join(staging, 'photos'), {recursive: true});
 	const manifest = {schemaVersion: 1, status: 'in-progress', startedAt: new Date().toISOString(), completedAt: null, counts: {recipes: 0, collections: 0, recipeCollectionMemberships: 0, photoReferences: 0, downloadedPhotos: 0}, files: {}, photos: [], errors: [], limitations: ['Recipe payloads are raw decoded fields from anylist@0.8.6.', 'All associated photos are attempted; photo IDs use the observed AnyList public JPEG CDN convention.', 'The protobuf system-collection settings map is omitted because this client decodes it as a cyclic internal structure; collection records and memberships are retained.', 'No scheduling is included.']};
+	report.counts = manifest.counts;
+	const AnyList = require('anylist');
 	const any = new AnyList({email, password, credentialsFile: null});
 	try {
+		report.phase = 'authentication';
 		await any.login(false);
+		report.phase = 'recipe retrieval';
 		await any.getRecipes(); // Exactly one recipe-inventory read via data/user-data/get.
+		report.phase = 'JSON writing';
 		const recipeData = any._userData.recipeDataResponse;
 		const rawRecipes = recipeData.recipes || [];
 		const recipeIds = new Set(rawRecipes.map(recipe => recipe.identifier));
@@ -155,12 +143,14 @@ async function main() {
 		manifest.files.collections = await writeJson(staging, 'collections.json', collections);
 		manifest.files.memberships = await writeJson(staging, 'collection-memberships.json', memberships);
 
+		report.phase = 'photo download';
 		for (const recipe of rawRecipes) {
 			const references = photoReferences(recipe);
 			manifest.counts.photoReferences += references.length;
 			for (const [ordinal, reference] of references.entries()) {
 				try {
 					manifest.photos.push(await downloadPhoto(staging, recipe.identifier, reference, ordinal));
+					manifest.counts.downloadedPhotos = manifest.photos.length;
 				} catch (error) {
 					// Do not include source URLs in errors: URLs can carry sensitive query strings.
 					manifest.errors.push({type: 'photo-download', recipeId: recipe.identifier, source: reference.source, photoId: reference.photoId || null, message: error.message});
@@ -172,9 +162,13 @@ async function main() {
 		manifest.files.recipes = {directory: 'recipes', count: rawRecipes.length};
 		manifest.status = 'complete';
 		manifest.completedAt = new Date().toISOString();
+		report.phase = 'validation';
 		await validateSnapshot(staging, manifest);
 		manifest.files.manifest = await writeJson(staging, 'manifest.json', manifest);
+		report.phase = 'snapshot promotion';
 		await fs.rename(staging, completed); // Atomic promotion: prior successful snapshots are untouched.
+		report.snapshot = completed;
+		report.phase = 'latest-successful update';
 		await updateLatestSuccessful(name); // Only changed after the completed snapshot has validated.
 		console.log(`Completed snapshot ${name}: ${manifest.counts.recipes} recipes, ${manifest.counts.downloadedPhotos} photos, ${manifest.counts.collections} collections.`);
 	} catch (error) {
@@ -188,7 +182,7 @@ async function main() {
 	}
 }
 
-main().catch(error => {
-	console.error(`Backup failed: ${error.message}`);
-	process.exitCode = 1;
-});
+module.exports = {main};
+if (require.main === module) {
+	require('./scripts/run-backup').run().then(code => { process.exitCode = code; });
+}

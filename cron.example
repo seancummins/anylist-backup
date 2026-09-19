@@ -4,5 +4,5 @@ SHELL=/bin/sh
 PATH=/usr/bin:/bin
 ANYLIST_RUN_CONVERSIONS=1
 
-# Run nightly at 02:30 local time. flock returns 75 when a prior run is active.
+# Run nightly at 02:30 local time. The wrapper logs a normal skip when a prior run is active.
 30 2 * * * /opt/anylist-export/scripts/cron-backup.sh >>/opt/anylist-export/logs/backup.log 2>&1
